@@ -17,6 +17,9 @@
   <!-- Thư viện PDF.js đọc file PDF (.pdf) nội bộ 100% offline -->
   <script src="js/pdf.min.js"></script>
 
+  <!-- Thư viện Tesseract.js nhận diện chữ từ ảnh chụp OCR -->
+  <script src="js/tesseract.min.js"></script>
+
   <!-- Firebase App & Firestore (CDN Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -67,6 +70,7 @@
         <div class="card-header">
           <h2 class="card-title"><span>📤</span> Tải Tệp Bài Tập Lên</h2>
           <div style="display: flex; gap: 10px;">
+            <button id="btn-sample-tuan5" class="btn-primary" style="background: #059669; font-weight: 700;">🌟 Nạp Đề Toán Tuần 5 (Ảnh cô gửi)</button>
             <button id="btn-sample-math" class="btn-outline">📐 Nạp Đề Mẫu Toán</button>
             <button id="btn-sample-viet" class="btn-outline">📖 Nạp Đề Mẫu Tiếng Việt</button>
           </div>
@@ -75,10 +79,14 @@
         <!-- Dropzone tải file -->
         <div id="upload-dropzone" class="upload-dropzone">
           <div class="upload-icon">📂</div>
-          <div class="upload-title">Kéo thả tệp đề bài vào đây hoặc bấm để chọn tệp</div>
-          <p class="upload-hint">Hỗ trợ tệp Word (.docx), tệp PDF (.pdf), tệp văn bản (.txt) hoặc tệp cấu trúc (.json)</p>
+          <div class="upload-title">Kéo thả tệp đề bài vào đây, bấm chọn tệp hoặc <strong>Dán ảnh chụp (Ctrl + V)</strong></div>
+          <p class="upload-hint">Hỗ trợ tệp Word (.docx), PDF (.pdf), Ảnh chụp (.png, .jpg) hoặc Dán ảnh chụp màn hình</p>
           <div id="selected-file-name" style="margin-top: 10px; font-weight: 700; color: var(--admin-primary);"></div>
-          <input type="file" id="exercise-file-input" accept=".docx,.pdf,.txt,.json,.md" style="display: none;">
+          <div id="image-paste-preview" class="hidden" style="margin-top: 12px; text-align: center;">
+            <img id="preview-img-elem" src="" alt="Ảnh đề bài" style="max-height: 220px; max-width: 100%; border-radius: 8px; border: 2px solid #818cf8; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <p style="font-size: 0.85rem; color: #4f46e5; margin-top: 4px; font-weight: 700;">📷 Đã nhận ảnh chụp đề bài!</p>
+          </div>
+          <input type="file" id="exercise-file-input" accept=".docx,.pdf,.png,.jpg,.jpeg,.webp,.txt,.json,.md" style="display: none;">
         </div>
 
         <!-- Hoặc dán trực tiếp nội dung văn bản -->

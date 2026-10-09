@@ -331,6 +331,23 @@ class AdminApp {
     const btnPublish = document.getElementById('btn-publish-quiz');
     const btnSampleMath = document.getElementById('btn-sample-math');
     const btnSampleViet = document.getElementById('btn-sample-viet');
+    const btnSampleTuan5 = document.getElementById('btn-sample-tuan5');
+
+    // Lắng nghe sự kiện Dán Ảnh (Ctrl + V) từ Clipboard
+    window.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || window.clipboardData)?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            this.handleImageFile(file);
+            break;
+          }
+        }
+      }
+    });
 
     dropzone.addEventListener('click', () => fileInput.click());
     dropzone.addEventListener('dragover', (e) => {
@@ -344,13 +361,23 @@ class AdminApp {
       e.preventDefault();
       dropzone.style.borderColor = '#818cf8';
       if (e.dataTransfer.files.length > 0) {
-        this.handleFileSelected(e.dataTransfer.files[0]);
+        const file = e.dataTransfer.files[0];
+        if (file.type && file.type.startsWith('image/')) {
+          this.handleImageFile(file);
+        } else {
+          this.handleFileSelected(file);
+        }
       }
     });
 
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
-        this.handleFileSelected(e.target.files[0]);
+        const file = e.target.files[0];
+        if (file.type && file.type.startsWith('image/')) {
+          this.handleImageFile(file);
+        } else {
+          this.handleFileSelected(file);
+        }
       }
     });
 
@@ -450,6 +477,261 @@ Bài tập 4. Tô màu vào từ ngữ có chứa âm ô:
 ô đỏ, cá cờ, bờ đê, cô bé`;
       alert("Đã nạp nội dung Đề Mẫu Tiếng Việt Lớp 1! Cô hãy nhấn nút 'Tự Động Phân Tích Bài Tập' nhé.");
     });
+
+    // Nạp đề Toán Tuần 5 trực tiếp từ ảnh phiếu bài tập của cô giáo
+    if (btnSampleTuan5) {
+      btnSampleTuan5.addEventListener('click', async () => {
+        const tuan5Questions = [
+          // BÀI 1: Đếm và so sánh số lượng (theo mẫu ảnh Tuần 5)
+          {
+            id: "t5_q1",
+            type: "choice",
+            text: "Bài 1: Bên trái có 5 con tôm, bên phải có 3 con tôm. Phép so sánh nào đúng?",
+            options: ["5 > 3", "5 < 3", "5 = 3"],
+            answer: "5 > 3",
+            hint: "Bé đếm nhé: 5 con tôm nhiều hơn 3 con tôm, vậy 5 lớn hơn 3 (5 > 3)!"
+          },
+          {
+            id: "t5_q2",
+            type: "choice",
+            text: "Bài 1: Bên trái có 1 con gà, bên phải có 1 con gà. Phép so sánh nào đúng?",
+            options: ["1 = 1", "1 > 1", "1 < 1"],
+            answer: "1 = 1",
+            hint: "Hai bên đều có 1 con gà bằng nhau, vậy 1 = 1 bé nha!"
+          },
+          {
+            id: "t5_q3",
+            type: "choice",
+            text: "Bài 1: Bên trái có 2 nắm cơm, bên phải có 4 nắm cơm. Phép so sánh nào đúng?",
+            options: ["2 < 4", "2 > 4", "2 = 4"],
+            answer: "2 < 4",
+            hint: "2 nắm cơm ít hơn 4 nắm cơm, nên 2 bé hơn 4 (2 < 4)!"
+          },
+          {
+            id: "t5_q4",
+            type: "choice",
+            text: "Bài 1: Bên trái có 2 chú lợn, bên phải ô trống không có chú nào. Phép so sánh đúng là:",
+            options: ["2 > 0", "2 < 0", "2 = 0"],
+            answer: "2 > 0",
+            hint: "Có 2 chú lợn nhiều hơn không có chú nào (số 0), nên 2 > 0!"
+          },
+          {
+            id: "t5_q5",
+            type: "choice",
+            text: "Bài 1: Bên trái có 3 chú mèo, bên phải có 6 chú lợn. Phép so sánh đúng là:",
+            options: ["3 < 6", "3 > 6", "3 = 6"],
+            answer: "3 < 6",
+            hint: "3 ít hơn 6, nên 3 bé hơn 6 (3 < 6) nhé bé yêu!"
+          },
+
+          // BÀI 2: Đ, S ? (Đúng hay Sai)
+          {
+            id: "t5_q6",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '2 < 5' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "Số 2 bé hơn số 5 là Đúng rồi!"
+          },
+          {
+            id: "t5_q7",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '7 < 6' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "SAI",
+            hint: "Số 7 lớn hơn số 6 chứ, vậy 7 < 6 là Sai bé nhé!"
+          },
+          {
+            id: "t5_q8",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '0 < 4' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "Số 0 bé hơn số 4 là Đúng!"
+          },
+          {
+            id: "t5_q9",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '4 = 4' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "Hai số 4 bằng nhau nên 4 = 4 là Đúng!"
+          },
+          {
+            id: "t5_q10",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '9 < 8' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "SAI",
+            hint: "Số 9 lớn hơn số 8, vậy 9 < 8 là Sai!"
+          },
+          {
+            id: "t5_q11",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '4 > 3' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "Số 4 lớn hơn số 3 là Đúng!"
+          },
+          {
+            id: "t5_q12",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '5 > 6' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "SAI",
+            hint: "5 bé hơn 6, nên 5 > 6 là Sai bé nha!"
+          },
+          {
+            id: "t5_q13",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '5 < 7' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "5 bé hơn 7 là Đúng!"
+          },
+          {
+            id: "t5_q14",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '9 > 8' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "9 lớn hơn 8 là Đúng!"
+          },
+          {
+            id: "t5_q15",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '4 > 4' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "SAI",
+            hint: "4 bằng 4 mới đúng, 4 > 4 là Sai!"
+          },
+          {
+            id: "t5_q16",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '10 > 8' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "10 lớn hơn 8 là Đúng!"
+          },
+          {
+            id: "t5_q17",
+            type: "tf",
+            text: "Bài 2: Phép so sánh '1 > 0' là Đúng hay Sai?",
+            options: ["ĐÚNG", "SAI"],
+            answer: "ĐÚNG",
+            hint: "1 lớn hơn 0 là Đúng!"
+          },
+
+          // BÀI 3a: Điền dấu >, <, =
+          {
+            id: "t5_q18",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 6 ... 4",
+            options: [">", "<", "="],
+            answer: ">",
+            hint: "6 lớn hơn 4, bé chọn dấu > nhé!"
+          },
+          {
+            id: "t5_q19",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 0 ... 3",
+            options: [">", "<", "="],
+            answer: "<",
+            hint: "0 bé hơn 3, bé chọn dấu < nhé!"
+          },
+          {
+            id: "t5_q20",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 5 ... 5",
+            options: [">", "<", "="],
+            answer: "=",
+            hint: "Hai số 5 bằng nhau, bé chọn dấu = nhé!"
+          },
+          {
+            id: "t5_q21",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 2 ... 1",
+            options: [">", "<", "="],
+            answer: ">",
+            hint: "2 lớn hơn 1, bé chọn dấu > nhé!"
+          },
+          {
+            id: "t5_q22",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 8 ... 8",
+            options: [">", "<", "="],
+            answer: "=",
+            hint: "8 bằng 8, bé chọn dấu = nhé!"
+          },
+          {
+            id: "t5_q23",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 9 ... 10",
+            options: [">", "<", "="],
+            answer: "<",
+            hint: "9 bé hơn 10, bé chọn dấu < nhé!"
+          },
+          {
+            id: "t5_q24",
+            type: "choice",
+            text: "Bài 3a: Điền dấu thích hợp: 10 ... 6",
+            options: [">", "<", "="],
+            answer: ">",
+            hint: "10 lớn hơn 6, bé chọn dấu > nhé!"
+          },
+
+          // BÀI 3b: Nối ô trống
+          {
+            id: "t5_q25",
+            type: "choice",
+            text: "Bài 3b: Chọn số thích hợp để: 3 = [ ? ]",
+            options: ["1", "2", "3", "4"],
+            answer: "3",
+            hint: "3 chỉ có thể bằng 3 thôi bé nha!"
+          },
+          {
+            id: "t5_q26",
+            type: "choice",
+            text: "Bài 3b: Chọn số thích hợp để: 1 > [ ? ]",
+            options: ["0", "1", "2", "3"],
+            answer: "0",
+            hint: "1 chỉ lớn hơn 0 trong các số này thôi!"
+          },
+          {
+            id: "t5_q27",
+            type: "choice",
+            text: "Bài 3b: Chọn số thích hợp để: 7 < [ ? ]",
+            options: ["5", "6", "7", "8"],
+            answer: "8",
+            hint: "7 bé hơn 8, bé chọn số 8 nhé!"
+          }
+        ];
+
+        this.currentQuestions = tuan5Questions;
+        this.renderQuestionsList();
+        await window.dataManager.saveQuestions(this.currentQuestions);
+        alert(`🎉 TUYỆT VỜI!\n\nĐã nạp toàn bộ ${tuan5Questions.length} câu hỏi từ đề bài Toán Tuần 5 (So sánh số) của cô và ĐÃ TỰ ĐỘNG PHÁT HÀNH cho học sinh làm bài ngay!`);
+      });
+    }
+  }
+
+  // Xử lý khi nhận tệp ảnh (dán hoặc tải lên)
+  handleImageFile(file) {
+    this.uploadedFile = file;
+    const nameLabel = document.getElementById('selected-file-name');
+    const previewBox = document.getElementById('image-paste-preview');
+    const imgElem = document.getElementById('preview-img-elem');
+
+    if (nameLabel) {
+      nameLabel.innerHTML = `📷 Đã nhận ảnh chụp (${Math.round(file.size / 1024)} KB)`;
+    }
+
+    if (previewBox && imgElem) {
+      imgElem.src = URL.createObjectURL(file);
+      previewBox.classList.remove('hidden');
+    }
+
+    this.handleFileSelected(file);
   }
 
   // Xử lý khi cô giáo chọn tệp (Tự động đọc, phân tích và phát hành tức thì)
@@ -467,7 +749,7 @@ Bài tập 4. Tô màu vào từ ngữ có chứa âm ô:
 
       // Tự động phân tích ngay lập tức
       const apiKey = window.dataManager.getGeminiKey();
-      const parsed = await window.exerciseParser.parseFileOrText(text, apiKey);
+      const parsed = await window.exerciseParser.parseFileOrText(file, apiKey);
 
       if (parsed && parsed.length > 0) {
         this.currentQuestions = parsed;

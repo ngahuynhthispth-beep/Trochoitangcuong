@@ -84,6 +84,23 @@ class ExerciseParser {
       } catch (err) {
         throw new Error(err.message || "Không thể đọc tệp PDF.");
       }
+    } else if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext) || (file.type && file.type.startsWith('image/'))) {
+      if (window.Tesseract) {
+        try {
+          const ret = await Tesseract.recognize(file, 'vie', {
+            logger: m => console.log(m)
+          });
+          const ocrText = (ret && ret.data && ret.data.text) ? ret.data.text.trim() : '';
+          if (!ocrText) {
+            throw new Error("Không nhận diện được chữ rõ ràng từ ảnh này. Cô hãy đảm bảo ảnh chụp đủ sáng và rõ nét nhé!");
+          }
+          return ocrText;
+        } catch (err) {
+          throw new Error("Lỗi khi đọc ảnh (OCR): " + err.message);
+        }
+      } else {
+        throw new Error("Thư viện nhận diện chữ Tesseract chưa tải xong. Bạn vui lòng thử lại sau vài giây!");
+      }
     } else if (ext === 'json') {
       return await file.text();
     } else {
@@ -664,8 +681,98 @@ ${rawText}`;
     return JSON.parse(textResponse);
   }
 
+  // Chuyển file thành chuỗi base64
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        const base64 = result.includes(',') ? result.split(',')[1] : result;
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Phân tích hình ảnh trực quan bằng Gemini 2.0 Flash Vision
+  async parseImageWithGemini(file, apiKey) {
+    const base64Data = await this.fileToBase64(file);
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const prompt = `Bạn là chuyên gia giáo dục tiểu học chuyên về chương trình lớp 1 tại Việt Nam.
+Hãy quan sát thật kỹ hình ảnh phiếu bài tập / đề ôn tập lớp 1 được đính kèm và chuyển đổi thành danh sách các câu hỏi trắc nghiệm/tương tác sinh động dành cho học sinh lớp 1.
+
+YÊU CẦU:
+1. Quan sát mọi hình ảnh, con vật, đồ vật, số lượng, bài tập nối, điền dấu, đúng/sai trong ảnh.
+2. Với bài tập đếm hình (ví dụ: đếm con tôm, con gà, nắm cơm...): hãy đặt câu hỏi rõ ràng (ví dụ: "Bên trái có 5 con tôm, bên phải có 3 con tôm. Bé hãy chọn phép so sánh đúng nhé!").
+3. Với bài tập Đúng/Sai (Đ, S): tạo câu hỏi dạng "tf" với lựa chọn ĐÚNG / SAI.
+4. Với bài tập điền dấu (>, <, =): tạo câu hỏi dạng "choice" với các phương án [">", "<", "="].
+5. Phân loại câu hỏi thành các dạng: "choice", "tf", "input".
+6. Viết thêm "hint" ấm áp, dễ hiểu cho bé lớp 1.
+7. Trả về DUY NHẤT một chuỗi JSON thuần túy (không kèm markdown \`\`\`json), định dạng mảng:
+[
+  {
+    "id": "q1",
+    "type": "choice",
+    "text": "Nội dung câu hỏi...",
+    "options": ["Phương án A", "Phương án B", "Phương án C"],
+    "answer": "Phương án đúng",
+    "hint": "Gợi ý giải thích nhẹ nhàng..."
+  }
+]`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: file.type || 'image/png',
+                data: base64Data
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2500
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json();
+      throw new Error(errJson.error?.message || "Lỗi gọi Gemini Vision API.");
+    }
+
+    const data = await response.json();
+    let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textResponse) throw new Error("AI không trả về nội dung hợp lệ.");
+
+    textResponse = textResponse.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    return JSON.parse(textResponse);
+  }
+
   // Phương thức tổng hợp chính
   async parseFileOrText(fileOrText, apiKey = '') {
+    const isImage = (fileOrText instanceof Blob && fileOrText.type && fileOrText.type.startsWith('image/')) ||
+                    (fileOrText && fileOrText.name && /\.(png|jpe?g|webp|gif|bmp)$/i.test(fileOrText.name));
+
+    // Nếu là ảnh và có Gemini API key -> gọi Gemini Vision đọc trực tiếp hình ảnh
+    if (isImage && apiKey && apiKey.length > 10) {
+      try {
+        console.log("Đang phân tích ảnh chụp bằng Gemini AI Vision...");
+        const aiResult = await this.parseImageWithGemini(fileOrText, apiKey);
+        if (aiResult && aiResult.length > 0) return aiResult;
+      } catch (err) {
+        console.warn("Gemini Vision gặp lỗi, chuyển sang OCR Tesseract:", err);
+      }
+    }
+
     let rawText = '';
     if (typeof fileOrText === 'string') {
       rawText = fileOrText;
@@ -673,7 +780,7 @@ ${rawText}`;
       rawText = await this.readFileContent(fileOrText);
     }
 
-    // Nếu có API Key, ưu tiên phân tích bằng AI
+    // Nếu có API Key và không phải ảnh đã xử lý, ưu tiên phân tích bằng AI
     if (apiKey && apiKey.length > 10) {
       try {
         console.log("Đang phân tích bài tập bằng Gemini AI...");
