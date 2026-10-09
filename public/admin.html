@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Quản Trị Giáo Viên - Ôn Tập Tăng Cường Lớp 1</title>
+
+  <!-- Admin Stylesheet -->
+  <link rel="stylesheet" href="css/admin.css">
+
+  <!-- Thư viện Mammoth.js đọc file Word (.docx) nội bộ 100% offline -->
+  <script src="js/mammoth.browser.min.js"></script>
+
+  <!-- Thư viện SheetJS xuất báo cáo Excel nội bộ -->
+  <script src="js/xlsx.full.min.js"></script>
+
+  <!-- Firebase App & Firestore (CDN Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- ADMIN NAVBAR -->
+  <header class="admin-navbar">
+    <div class="brand-wrapper">
+      <div class="brand-logo">🏫</div>
+      <div class="brand-title">
+        <h1>Quản Trị Ôn Tập Lớp 1</h1>
+        <p>Phân tích đề tự động & Giám sát học sinh làm bài</p>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <div id="firebase-status-chip" class="status-chip local">
+        <span class="status-dot"></span> Đang kiểm tra kết nối...
+      </div>
+      <a href="index.html" target="_blank" class="btn-open-student">
+        <span>🎮</span> Xem Giao Diện Học Sinh
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <main class="admin-layout">
+    <!-- NAVIGATION TABS -->
+    <nav class="admin-tabs">
+      <button class="tab-btn active" data-tab="tab-upload">
+        <span>📁</span> Tải Đề & Phân Tích Bài Tập
+      </button>
+      <button class="tab-btn" data-tab="tab-students">
+        <span>📊</span> Nhật Ký Học Sinh & Bốc Thăm
+      </button>
+      <button class="tab-btn" data-tab="tab-prizes">
+        <span>🎁</span> Kho Quà Sít Rịt & Lè Khe
+      </button>
+      <button class="tab-btn" data-tab="tab-settings">
+        <span>⚙️</span> Cài Đặt Firebase & Gemini AI
+      </button>
+    </nav>
+
+    <!-- ================= TAB 1: TẢI ĐỀ & PHÂN TÍCH ================= -->
+    <section id="tab-upload" class="tab-pane active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title"><span>📤</span> Tải Tệp Bài Tập Lên</h2>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-sample-math" class="btn-outline">📐 Nạp Đề Mẫu Toán</button>
+            <button id="btn-sample-viet" class="btn-outline">📖 Nạp Đề Mẫu Tiếng Việt</button>
+          </div>
+        </div>
+
+        <!-- Dropzone tải file -->
+        <div id="upload-dropzone" class="upload-dropzone">
+          <div class="upload-icon">📂</div>
+          <div class="upload-title">Kéo thả tệp đề bài vào đây hoặc bấm để chọn tệp</div>
+          <p class="upload-hint">Hỗ trợ tệp Word (.docx), tệp văn bản (.txt) hoặc tệp cấu trúc (.json)</p>
+          <div id="selected-file-name" style="margin-top: 10px; font-weight: 700; color: var(--admin-primary);"></div>
+          <input type="file" id="exercise-file-input" accept=".docx,.txt,.json,.md" style="display: none;">
+        </div>
+
+        <!-- Hoặc dán trực tiếp nội dung văn bản -->
+        <div class="form-group">
+          <label class="form-label">Hoặc dán trực tiếp nội dung bài tập / đề cương vào đây:</label>
+          <textarea id="manual-text-input" class="form-control" rows="6" placeholder="Ví dụ:
+Câu 1: Phép tính 4 + 3 bằng bao nhiêu?
+A. 6
+B. 7
+C. 8
+D. 9
+Đáp án: B
+
+Câu 2: Số 8 lớn hơn số 5, đúng hay sai?
+Đáp án: ĐÚNG"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <p style="font-size: 0.85rem; color: var(--admin-muted);">
+            💡 <em>Hệ thống tích hợp <strong>Smart Parser</strong> (tự động nhận dạng không cần key) và <strong>Gemini AI</strong> (khi có API key) để trích xuất câu hỏi chuẩn hoá cho học sinh lớp 1.</em>
+          </p>
+          <button id="btn-parse-exercise" class="btn-primary" style="font-size: 1.05rem; padding: 12px 28px;">
+            ⚡ Tự Động Phân Tích Bài Tập
+          </button>
+        </div>
+      </div>
+
+      <!-- DANH SÁCH CÂU HỎI ĐÃ PHÂN TÍCH & XUẤT BẢN -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span>📋</span> Danh Sách Câu Hỏi Đang Sử Dụng 
+            <span id="questions-count-badge" style="font-size: 0.85rem; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 3px 10px; border-radius: 12px;">5 câu hỏi</span>
+          </h2>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-add-question-top" class="btn-primary" style="background: #4f46e5;">
+              ➕ Thêm Câu Hỏi Mới
+            </button>
+            <button id="btn-publish-quiz" class="btn-success" style="font-size: 1rem; padding: 10px 24px;">
+              🚀 Cập Nhật & Phát Hành Cho Học Sinh
+            </button>
+          </div>
+        </div>
+
+        <div id="questions-preview-list" class="questions-list">
+          <!-- Render động danh sách câu hỏi -->
+        </div>
+
+        <div style="text-align: center; margin-top: 18px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <button id="btn-add-question-bottom" class="btn-outline" style="border: 2px dashed #818cf8; color: #4338ca; font-weight: 800; padding: 12px 28px; border-radius: 12px; font-size: 1rem; background: #f5f3ff;">
+            ➕ Bấm Vào Đây Để Thêm Câu Hỏi Mới Vào Đề
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: NHẬT KÝ HỌC SINH & BỐC THĂM ================= -->
+    <section id="tab-students" class="tab-pane">
+      <!-- Thống kê tổng quan -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">👦</div>
+          <div>
+            <div id="stat-total-students" class="stat-val">0</div>
+            <div class="stat-lbl">Học sinh đã làm bài</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #fef3c7; color: #d97706;">⭐</div>
+          <div>
+            <div id="stat-avg-score" class="stat-val">0.0</div>
+            <div class="stat-lbl">Điểm trung bình</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ffe4e6; color: #e11d48;">🎁</div>
+          <div>
+            <div id="stat-sit-rit-count" class="stat-val">0</div>
+            <div class="stat-lbl">Bốc "Sít Rịt" (Quà)</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #f3e8ff; color: #7c3aed;">😜</div>
+          <div>
+            <div id="stat-le-khe-count" class="stat-val">0</div>
+            <div class="stat-lbl">Bốc "Lè Khe" (Phạt vui)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng nhật ký chi tiết -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title"><span>📝</span> Chi Tiết Học Sinh & Kết Quả Bốc Thăm</h2>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-export-excel" class="btn-outline">📥 Xuất File Excel</button>
+            <button id="btn-clear-logs" class="btn-outline" style="color: #ef4444;">🗑️ Xóa Lịch Sử</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Tên Học Sinh</th>
+                <th>Điểm Số</th>
+                <th>Câu Đúng</th>
+                <th>Tình Trạng Làm Sai</th>
+                <th>Bốc Thăm</th>
+                <th>Quà / Thử Thách Trúng</th>
+                <th>Thời Gian</th>
+              </tr>
+            </thead>
+            <tbody id="student-logs-tbody">
+              <!-- Render động nhật ký -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: KHO QUÀ & THỬ THÁCH ================= -->
+    <section id="tab-prizes" class="tab-pane">
+      <div class="prizes-container">
+        <!-- CỘT 1: SÍT RỊT -->
+        <div class="prize-column" style="border-top: 4px solid var(--admin-sit-rit);">
+          <div class="prize-col-header">
+            <div class="prize-col-title" style="color: var(--admin-sit-rit);">
+              <span>🎁</span> Kho Quà May Mắn "SÍT RỊT"
+            </div>
+            <button id="btn-add-sit-rit" class="btn-outline" style="font-size: 0.82rem; padding: 4px 10px;">+ Thêm Quà</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--admin-muted); margin-bottom: 14px;">
+            Dành cho học sinh làm bài trên 9 điểm chọn bốc quà may mắn khích lệ tinh thần.
+          </p>
+          <ul id="sit-rit-prizes-list" class="prize-list"></ul>
+        </div>
+
+        <!-- CỘT 2: LÈ KHE -->
+        <div class="prize-column" style="border-top: 4px solid var(--admin-le-khe);">
+          <div class="prize-col-header">
+            <div class="prize-col-title" style="color: var(--admin-le-khe);">
+              <span>😜</span> Thử Thách Vui Nhộn "LÈ KHE"
+            </div>
+            <button id="btn-add-le-khe" class="btn-outline" style="font-size: 0.82rem; padding: 4px 10px;">+ Thêm Thử Thách</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--admin-muted); margin-bottom: 14px;">
+            Các nhiệm vụ vui, việc nhà vừa sức học sinh lớp 1 rèn luyện tính tự lập và hiếu thảo.
+          </p>
+          <ul id="le-khe-prizes-list" class="prize-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: CÀI ĐẶT HỆ THỐNG ================= -->
+    <section id="tab-settings" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title"><span>🤖</span> Cấu Hình Gemini AI (Tự Động Phân Tích)</h2>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--admin-muted); margin-bottom: 14px;">
+          Khi có API Key, hệ thống sẽ sử dụng mô hình trí tuệ nhân tạo Gemini để đọc hiểu các tệp Word phức tạp và tự động soạn thảo câu hỏi kèm lời gợi ý phù hợp lứa tuổi học sinh lớp 1.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Google Gemini API Key:</label>
+          <input type="password" id="gemini-api-key-input" class="form-control" placeholder="Dán mã API Key của bạn (bắt đầu bằng AIzaSy...)">
+          <p class="form-text">
+            Cô có thể lấy API Key miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--admin-primary); font-weight:700;">Google AI Studio</a>. (Nếu chưa nhớ mật khẩu, hệ thống vẫn hoạt động bình thường với Smart Parser nội bộ).
+          </p>
+        </div>
+
+        <button id="btn-save-gemini-key" class="btn-primary">💾 Lưu Gemini API Key</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title"><span>🔥</span> Cấu Hình Firebase (Đồng Bộ Trực Tuyến Qua Internet)</h2>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--admin-muted); margin-bottom: 14px;">
+          Để học sinh làm bài trên iPad/điện thoại ở nhà mà máy tính của cô giáo tại trường vẫn xem được kết quả và lượt quay bốc thăm theo thời gian thực, hãy dán cấu hình Firebase của cô vào đây:
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Firebase Config (định dạng JSON):</label>
+          <textarea id="firebase-config-input" class="form-control" rows="8" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "du-an-lop-1.firebaseapp.com",
+  "projectId": "du-an-lop-1",
+  "storageBucket": "du-an-lop-1.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abcdef"
+}'></textarea>
+          <p class="form-text">
+            Cô có thể tạo miễn phí một project tại <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--admin-primary); font-weight:700;">Firebase Console</a> > Project Settings > Your Apps (Web App) > Sao chép firebaseConfig.
+          </p>
+        </div>
+
+        <button id="btn-save-firebase-config" class="btn-primary">💾 Lưu Cấu Hình Firebase</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL THÊM / CHỈNH SỬA CÂU HỎI -->
+  <div id="question-modal" class="modal-overlay hidden">
+    <div class="card" style="max-width: 620px; width: 100%; margin: 0 auto; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 3px solid #818cf8;">
+      <div class="card-header">
+        <h2 id="q-modal-title" class="card-title"><span>✏️</span> Thêm Câu Hỏi Mới</h2>
+        <button id="btn-close-q-modal" class="btn-del-prize" style="font-size: 1.4rem; padding: 4px 8px;">✕</button>
+      </div>
+
+      <input type="hidden" id="modal-q-index" value="-1">
+
+      <div class="form-group">
+        <label class="form-label">Nội dung câu hỏi:</label>
+        <textarea id="modal-q-text" class="form-control" rows="3" placeholder="Ví dụ: Phép tính 5 + 4 bằng bao nhiêu?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dạng câu hỏi:</label>
+        <select id="modal-q-type" class="form-control" style="font-weight: 700; color: var(--admin-primary);">
+          <option value="choice">Trắc nghiệm (4 lựa chọn A, B, C, D)</option>
+          <option value="tf">Đúng / Sai (2 nút Đúng và Sai)</option>
+          <option value="input">Điền số hoặc từ ngắn vào ô trống</option>
+        </select>
+      </div>
+
+      <!-- Vùng lựa chọn cho Trắc nghiệm (4 đáp án) -->
+      <div id="modal-choice-group">
+        <label class="form-label">Nhập 4 lựa chọn (Tích chọn tròn ở đáp án ĐÚNG):</label>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="radio" name="modal-correct-choice" value="0" checked style="width: 20px; height: 20px;">
+            <strong style="width: 24px; color: #4f46e5;">A:</strong>
+            <input type="text" id="modal-opt-0" class="form-control" placeholder="Đáp án A">
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="radio" name="modal-correct-choice" value="1" style="width: 20px; height: 20px;">
+            <strong style="width: 24px; color: #4f46e5;">B:</strong>
+            <input type="text" id="modal-opt-1" class="form-control" placeholder="Đáp án B">
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="radio" name="modal-correct-choice" value="2" style="width: 20px; height: 20px;">
+            <strong style="width: 24px; color: #4f46e5;">C:</strong>
+            <input type="text" id="modal-opt-2" class="form-control" placeholder="Đáp án C">
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="radio" name="modal-correct-choice" value="3" style="width: 20px; height: 20px;">
+            <strong style="width: 24px; color: #4f46e5;">D:</strong>
+            <input type="text" id="modal-opt-3" class="form-control" placeholder="Đáp án D">
+          </div>
+        </div>
+      </div>
+
+      <!-- Vùng lựa chọn cho Đúng / Sai -->
+      <div id="modal-tf-group" class="hidden">
+        <label class="form-label">Đáp án Đúng là:</label>
+        <select id="modal-tf-answer" class="form-control">
+          <option value="ĐÚNG">ĐÚNG 👍</option>
+          <option value="SAI">SAI 👎</option>
+        </select>
+      </div>
+
+      <!-- Vùng lựa chọn cho Điền khuyết -->
+      <div id="modal-input-group" class="hidden">
+        <label class="form-label">Đáp án điền chính xác:</label>
+        <input type="text" id="modal-input-answer" class="form-control" placeholder="Ví dụ: 8 hoặc hoa sen">
+      </div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">💡 Gợi ý giải thích (Hiển thị khi bé làm sai 3 lần):</label>
+        <input type="text" id="modal-q-hint" class="form-control" placeholder="Ví dụ: Bé đếm ngón tay nhé: 5 thêm 4 là 9!">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px;">
+        <button id="btn-cancel-q-modal" class="btn-outline">Hủy Bỏ</button>
+        <button id="btn-save-q-modal" class="btn-primary" style="padding: 10px 24px;">💾 Lưu Câu Hỏi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/db.js?v=5"></script>
+  <script src="js/parser.js?v=5"></script>
+  <script src="js/admin.js?v=5"></script>
+</body>
+</html>
