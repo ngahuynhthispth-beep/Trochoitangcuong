@@ -51,8 +51,8 @@ class ExerciseParser {
         throw new Error("Thư viện đọc file PDF (.pdf) chưa sẵn sàng. Bạn vui lòng thử lại sau vài giây!");
       }
       try {
-        if (pdfLib.GlobalWorkerOptions && !pdfLib.GlobalWorkerOptions.workerSrc) {
-          pdfLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+        if (pdfLib.GlobalWorkerOptions) {
+          pdfLib.GlobalWorkerOptions.workerSrc = window.location.origin + '/js/pdf.worker.min.js';
         }
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfLib.getDocument({ data: arrayBuffer });
@@ -60,13 +60,29 @@ class ExerciseParser {
         let fullText = '';
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
-          fullText += pageText + '\n\n';
+          const textContent = await page.getTextContent({ includeMarkedContent: true });
+          let lastY = null;
+          let pageText = '';
+          for (const item of textContent.items) {
+            if (!item.str) continue;
+            const currentY = item.transform ? item.transform[5] : null;
+            if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 5) {
+              pageText += '\n';
+            } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
+              pageText += ' ';
+            }
+            pageText += item.str;
+            if (currentY !== null) lastY = currentY;
+          }
+          fullText += pageText.trim() + '\n\n';
         }
-        return fullText.trim();
+        fullText = fullText.trim();
+        if (!fullText) {
+          throw new Error("Tệp PDF này là dạng hình ảnh scan/chụp (không có lớp chữ). Cô hãy dùng tệp Word (.docx) hoặc dán chữ đề bài vào ô bên dưới nhé!");
+        }
+        return fullText;
       } catch (err) {
-        throw new Error("Không thể đọc tệp PDF (.pdf): " + err.message);
+        throw new Error(err.message || "Không thể đọc tệp PDF.");
       }
     } else if (ext === 'json') {
       return await file.text();

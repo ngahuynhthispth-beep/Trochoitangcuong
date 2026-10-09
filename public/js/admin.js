@@ -382,7 +382,7 @@ class AdminApp {
           await window.dataManager.saveQuestions(this.currentQuestions);
           alert(`🎉 TUYỆT VỜI!\n\nHệ thống đã tự động phân tích thành công ${parsed.length} câu hỏi từ đề bài và ĐÃ TỰ ĐỘNG PHÁT HÀNH cho học sinh!\n\nHọc sinh ở nhà mở ứng dụng là có thể làm bài ngay lập tức mà cô không cần phải cập nhật từng câu nữa!`);
         } else {
-          alert("Không thể nhận diện câu hỏi từ nội dung này. Vui lòng kiểm tra lại nội dung bài tập!");
+          alert("⚠️ Chưa nhận diện được câu hỏi từ nội dung này!\n\nCô hãy kiểm tra:\n1. Nếu là tệp PDF dạng ảnh chụp/scan (không bôi đen chữ được), hệ thống không đọc được lớp chữ. Cô hãy dùng file Word (.docx) hoặc dán trực tiếp chữ vào ô nhé!\n2. Đảm bảo nội dung có cấu trúc câu hỏi (như: 'Câu 1:', 'Bài 1:', 'A. B. C. D' hoặc phép tính '4 + 3 = ...').");
         }
       } catch (err) {
         alert("Lỗi khi phân tích: " + err.message);
@@ -482,8 +482,8 @@ Bài tập 4. Tô màu vào từ ngữ có chứa âm ô:
         nameLabel.innerHTML = `⚠️ Đã tải văn bản vào ô dưới. Cô hãy bấm "⚡ Tự Động Phân Tích Bài Tập" nhé.`;
       }
     } catch (err) {
-      alert("Lỗi khi đọc tệp Word/văn bản: " + err.message);
-      nameLabel.innerHTML = `❌ Lỗi đọc tệp: ${err.message}`;
+      alert("⚠️ " + err.message);
+      nameLabel.innerHTML = `❌ ${err.message}`;
     }
   }
 
