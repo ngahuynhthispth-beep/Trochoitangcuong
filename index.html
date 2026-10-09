@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bé Vui Ôn Tập Lớp 1 - Trò Chơi Tăng Cường Kiến Thức</title>
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css?v=4">
+
+  <!-- Confetti Canvas Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Firebase App & Firestore (CDN Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <!-- APP HEADER -->
+    <header class="app-header">
+      <div class="kid-profile">
+        <div class="avatar-badge">🦁</div>
+        <div class="kid-info">
+          <h3 id="header-student-name">Bé Học Sinh</h3>
+          <span>Học sinh Lớp 1</span>
+        </div>
+      </div>
+
+      <div class="header-score">
+        <span class="star-icon">⭐</span>
+        <span id="header-current-score">0.0</span> điểm
+      </div>
+    </header>
+
+    <!-- MÀN HÌNH 1: NHẬP TÊN BÉ THAM GIA -->
+    <section id="join-screen" class="join-screen">
+      <div class="join-icon">🎒</div>
+      <h1 class="join-title">Chào Mừng Bé Yêu!</h1>
+      <p class="join-subtitle">Hôm nay bé hãy cùng tham gia thử thách ôn tập vui nhộn nhé!</p>
+
+      <div class="name-input-group">
+        <input type="text" id="student-name-input" class="kid-name-input" placeholder="Bé hãy nhập tên của mình vào đây nha..." maxlength="30" autocomplete="off">
+      </div>
+
+      <button id="btn-start-game" class="start-btn">Bắt Đầu Thôi Nào! 🚀</button>
+
+      <div style="margin-top: 28px;">
+        <a href="admin.html" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none; font-weight: 700;">
+          ⚙️ Dành cho Cô Giáo (Trang Quản trị & Ra đề)
+        </a>
+      </div>
+    </section>
+
+    <!-- MÀN HÌNH 2: BÀI TẬP TƯƠNG TÁC -->
+    <section id="game-screen" class="hidden" style="display: flex; flex-direction: column; flex: 1;">
+      <!-- Thanh tiến trình câu hỏi -->
+      <div class="progress-container">
+        <div class="progress-header">
+          <span id="progress-text">Câu hỏi 1 / 5</span>
+          <span>💪 Cố lên bé yêu!</span>
+        </div>
+        <div class="progress-track">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Thẻ bài tập chính -->
+      <div class="game-card">
+        <!-- Vùng câu hỏi & nút phát âm -->
+        <div class="question-box">
+          <button id="speaker-btn" class="speaker-btn" title="Bấm để nghe cô đọc câu hỏi nhé!">
+            🔊
+          </button>
+          <div id="question-text" class="question-text">
+            Đang tải câu hỏi...
+          </div>
+        </div>
+
+        <!-- Cảnh báo số lần làm sai (lần 1, lần 2) -->
+        <div id="attempts-badge" class="attempts-badge hidden"></div>
+
+        <!-- Khung gợi ý khi làm sai 3 lần -->
+        <div id="hint-box" class="hint-box hidden">
+          <div class="hint-header">
+            <span>💡</span> Gợi Ý Cho Bé
+          </div>
+          <div id="hint-text" class="hint-body"></div>
+          <div style="margin-top: 14px; text-align: right;">
+            <button id="btn-next-from-hint" class="submit-answer-btn" style="padding: 10px 22px; font-size: 1.05rem;">
+              Bé Đã Hiểu! Sang Câu Tiếp Theo ➡️
+            </button>
+          </div>
+        </div>
+
+        <!-- Popup Thông Báo Trả Lời Đúng -->
+        <div id="correct-toast" class="correct-toast hidden">
+          <div class="correct-toast-icon">🎉</div>
+          <div class="correct-toast-content">
+            <div class="correct-toast-title">CHÍNH XÁC! BÉ GIỎI QUÁ! ⭐</div>
+            <div class="correct-toast-sub">+ Bé được cộng điểm xuất sắc!</div>
+          </div>
+        </div>
+
+        <!-- Vùng các lựa chọn trả lời (Trắc nghiệm, Đúng/Sai, Điền số) -->
+        <div id="answers-container"></div>
+      </div>
+    </section>
+
+    <!-- MÀN HÌNH 3: TỔNG KẾT & GAMIFICATION BỐC THĂM -->
+    <section id="result-screen" class="result-screen hidden">
+      <div class="trophy-badge">🏆</div>
+      <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--primary); margin-bottom: 6px;">Hoàn Thành Bài Tập!</h2>
+      <div id="final-score-val" class="score-display">10</div>
+      <p id="final-score-msg" class="score-subtext">Bé làm bài rất giỏi!</p>
+
+      <!-- KHUNG THÔNG BÁO ĐỘNG VIÊN CHO BÉ LÀM DƯỚI 9 ĐIỂM -->
+      <div id="retry-encourage-box" class="retry-encourage-banner hidden">
+        <div style="font-size: 2.8rem; margin-bottom: 6px;">🌟💪</div>
+        <h3 class="retry-encourage-title">Cố Lên Bé Yêu!</h3>
+        <p class="retry-encourage-desc">Em hãy làm lại bài để tham gia quay vòng quay nhé!</p>
+      </div>
+
+      <!-- KHUNG VÒNG QUAY MAY MẮN KHI ĐIỂM >= 9 -->
+      <div id="lucky-draw-gate" class="lucky-draw-gate hidden">
+        <h3 class="gate-title">🎉 VÒNG QUAY BẢO BỐI: SÍT RỊT & LÈ KHE!</h3>
+        <p class="gate-desc">Bé đạt trên 9 điểm xuất sắc! Mỗi lần làm bài bé được quay 1 lần duy nhất, hãy bấm quay nhé!</p>
+
+        <div class="wheel-wrapper">
+          <div id="wheel-pointer" class="wheel-pointer"></div>
+          <canvas id="wheel-canvas" width="360" height="360"></canvas>
+          <button id="btn-spin-wheel-center" class="wheel-center-btn" title="Bấm để quay">QUAY</button>
+        </div>
+
+        <div>
+          <button id="btn-spin-wheel" class="spin-action-btn">
+            🎡 BẤM ĐỂ QUAY NGAY 🎯
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button id="btn-play-again" class="start-btn" style="max-width: 320px; margin: 0 auto; display: block;">
+          Làm Lại Bài Ôn Tập 🔄
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- POPUP MODAL KẾT QUẢ BỐC THĂM -->
+  <div id="prize-modal" class="modal-overlay hidden">
+    <div class="prize-modal-content">
+      <div id="prize-icon" class="prize-icon">🎊</div>
+      <div id="prize-category-tag" class="prize-category-tag tag-sit-rit">BỐC QUÀ SÍT RỊT</div>
+      <h2 id="prize-title" class="prize-title">Tên phần quà</h2>
+      <p id="prize-desc" class="prize-desc">Mô tả chi tiết phần quà hoặc nhiệm vụ</p>
+      <button id="btn-close-prize" class="close-modal-btn">✨ Đã Nhận - Về Màn Hình Ban Đầu 🏠</button>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/audio.js?v=5"></script>
+  <script src="js/speech.js?v=5"></script>
+  <script src="js/db.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
+</body>
+</html>
