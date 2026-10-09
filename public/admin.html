@@ -14,6 +14,9 @@
   <!-- Thư viện SheetJS xuất báo cáo Excel nội bộ -->
   <script src="js/xlsx.full.min.js"></script>
 
+  <!-- Thư viện PDF.js đọc file PDF (.pdf) nội bộ 100% offline -->
+  <script src="js/pdf.min.js"></script>
+
   <!-- Firebase App & Firestore (CDN Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -73,9 +76,9 @@
         <div id="upload-dropzone" class="upload-dropzone">
           <div class="upload-icon">📂</div>
           <div class="upload-title">Kéo thả tệp đề bài vào đây hoặc bấm để chọn tệp</div>
-          <p class="upload-hint">Hỗ trợ tệp Word (.docx), tệp văn bản (.txt) hoặc tệp cấu trúc (.json)</p>
+          <p class="upload-hint">Hỗ trợ tệp Word (.docx), tệp PDF (.pdf), tệp văn bản (.txt) hoặc tệp cấu trúc (.json)</p>
           <div id="selected-file-name" style="margin-top: 10px; font-weight: 700; color: var(--admin-primary);"></div>
-          <input type="file" id="exercise-file-input" accept=".docx,.txt,.json,.md" style="display: none;">
+          <input type="file" id="exercise-file-input" accept=".docx,.pdf,.txt,.json,.md" style="display: none;">
         </div>
 
         <!-- Hoặc dán trực tiếp nội dung văn bản -->

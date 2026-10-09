@@ -45,6 +45,29 @@ class ExerciseParser {
       } else {
         throw new Error("Thư viện đọc file Word (.docx) chưa sẵn sàng. Bạn vui lòng thử lại sau vài giây!");
       }
+    } else if (ext === 'pdf') {
+      const pdfLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+      if (!pdfLib) {
+        throw new Error("Thư viện đọc file PDF (.pdf) chưa sẵn sàng. Bạn vui lòng thử lại sau vài giây!");
+      }
+      try {
+        if (pdfLib.GlobalWorkerOptions && !pdfLib.GlobalWorkerOptions.workerSrc) {
+          pdfLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        let fullText = '';
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + '\n\n';
+        }
+        return fullText.trim();
+      } catch (err) {
+        throw new Error("Không thể đọc tệp PDF (.pdf): " + err.message);
+      }
     } else if (ext === 'json') {
       return await file.text();
     } else {

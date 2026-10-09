@@ -79,7 +79,7 @@ class AdminApp {
         <div style="text-align:center; padding: 36px 20px; color: #64748b; background: white; border-radius: 12px; border: 2px dashed #cbd5e1;">
           <div style="font-size: 2.5rem; margin-bottom: 8px;">📝</div>
           <p style="font-weight: 700; font-size: 1.05rem;">Chưa có câu hỏi nào trong đề bài!</p>
-          <p style="font-size: 0.9rem; margin-top: 4px;">Cô hãy tải tệp Word lên, chọn đề mẫu hoặc bấm <strong>"+ Thêm Câu Hỏi Mới"</strong> để bắt đầu soạn đề nhé.</p>
+          <p style="font-size: 0.9rem; margin-top: 4px;">Cô hãy tải tệp Word, PDF lên, chọn đề mẫu hoặc bấm <strong>"+ Thêm Câu Hỏi Mới"</strong> để bắt đầu soạn đề nhé.</p>
         </div>
       `;
       return;
@@ -358,7 +358,7 @@ class AdminApp {
     btnParse.addEventListener('click', async () => {
       const rawText = document.getElementById('manual-text-input').value.trim();
       if (!this.uploadedFile && !rawText) {
-        alert("Vui lòng chọn một tệp bài tập (.docx, .txt, .json) hoặc dán nội dung bài tập vào ô bên dưới!");
+        alert("Vui lòng chọn một tệp bài tập (.docx, .pdf, .txt, .json) hoặc dán nội dung bài tập vào ô bên dưới!");
         return;
       }
 
