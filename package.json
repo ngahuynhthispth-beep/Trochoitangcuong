@@ -1,9 +1,0 @@
-{
-  "name": "ung-dung-tro-choi-tang-cuong",
-  "version": "1.0.0",
-  "description": "Ứng dụng ôn tập tăng cường lớp 1",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  }
-}
